@@ -1,20 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Workflow.Domain.Enums;
+﻿namespace Workflow.Domain.Entities;
 
-namespace Workflow.Domain.Entities
+public enum ProcessStatus { Pending, Active, Completed, Rejected }
+
+public class Process
 {
-    public class Process
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public Guid WorkflowId { get; set; }
-        public string Initiator { get; set; } = null!;
-        public ProcessStatus Status { get; set; } = ProcessStatus.Active;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public List<ProcessStepExecution> Executions { get; set; } = new();
-        public Workflow Workflow { get; set; } = null!;
-    }
+    public int Id { get; set; }
+    public int WorkflowId { get; set; }
+    public Workflow Workflow { get; set; } = null!;
+    public string Initiator { get; set; } = null!;
+    public ProcessStatus Status { get; set; } = ProcessStatus.Active;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public ICollection<ProcessStepExecution> Executions { get; set; } = new List<ProcessStepExecution>();
 }

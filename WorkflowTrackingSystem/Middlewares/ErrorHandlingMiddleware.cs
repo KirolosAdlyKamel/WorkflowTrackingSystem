@@ -1,60 +1,60 @@
 ﻿using Newtonsoft.Json;
 using System.Net;
 
-namespace Workflow.Presentation.Middlewares
+namespace Workflow.Presentation.Middleware;
+
+public class ErrorHandlingMiddleware
 {
-    public class ErrorHandlingMiddleware
+    private readonly RequestDelegate _next;
+    private readonly ILogger<ErrorHandlingMiddleware> _logger;
+
+    public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
     {
-        private readonly RequestDelegate _next;
-        private readonly ILogger<ErrorHandlingMiddleware> _logger;
+        _next = next;
+        _logger = logger;
+    }
 
-        public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
         {
-            _next = next;
-            _logger = logger;
+            await _next(context);
         }
-
-        public async Task InvokeAsync(HttpContext context)
+        catch (Exception ex)
         {
-            try
-            {
-                await _next(context);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unhandled exception occurred");
-                await HandleExceptionAsync(context, ex);
-            }
-        }
-
-        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
-        {
-            var response = context.Response;
-            response.ContentType = "application/json";
-
-            response.StatusCode = exception switch
-            {
-                ArgumentException => (int)HttpStatusCode.BadRequest,
-                KeyNotFoundException => (int)HttpStatusCode.NotFound,
-                _ => (int)HttpStatusCode.InternalServerError
-            };
-
-            var result = JsonConvert.SerializeObject(new
-            {
-                success = false,
-                message = exception.Message,
-                details = response.StatusCode == 500 ? "An internal server error occurred." : null
-            });
-
-            return response.WriteAsync(result);
+            _logger.LogError(ex, "Unhandled exception occurred");
+            await HandleExceptionAsync(context, ex);
         }
     }
 
-    public static class ErrorHandlingMiddlewareExtensions
+    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        public static IApplicationBuilder UseGlobalErrorHandler(this IApplicationBuilder app)
+        var response = context.Response;
+        response.ContentType = "application/json";
+
+        response.StatusCode = exception switch
         {
-            return app.UseMiddleware<ErrorHandlingMiddleware>();
-        }
+            ArgumentException => (int)HttpStatusCode.BadRequest,
+            KeyNotFoundException => (int)HttpStatusCode.NotFound,
+            InvalidOperationException => (int)HttpStatusCode.BadRequest,
+            _ => (int)HttpStatusCode.InternalServerError
+        };
+
+        var result = JsonConvert.SerializeObject(new
+        {
+            success = false,
+            message = exception.Message,
+            details = response.StatusCode == 500 ? "An internal server error occurred." : null
+        });
+
+        return response.WriteAsync(result);
+    }
+}
+
+public static class ErrorHandlingMiddlewareExtensions
+{
+    public static IApplicationBuilder UseGlobalErrorHandler(this IApplicationBuilder app)
+    {
+        return app.UseMiddleware<ErrorHandlingMiddleware>();
     }
 }

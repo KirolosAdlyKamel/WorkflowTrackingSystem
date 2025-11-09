@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Workflow.Domain.Entities;
+﻿using Workflow.Domain.Entities;
 
-namespace Workflow.Application.Interfaces
+namespace Workflow.Application.Interfaces;
+
+public interface IValidationService
 {
-    public interface IValidationService
-    {
-        Task<bool> ValidateStepAsync(WorkflowStep step);
-    }
+    Task<(bool success, string message)> ValidateAsync(Process process, WorkflowStep step);
 }

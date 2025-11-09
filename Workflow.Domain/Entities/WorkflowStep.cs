@@ -1,21 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Workflow.Domain.Entities;
 
-namespace Workflow.Domain.Entities
+public class WorkflowStep
 {
-    public class WorkflowStep
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public Guid WorkflowId { get; set; }
-        public string StepName { get; set; } = null!;
-        public string AssignedTo { get; set; } = null!;
-        public string ActionType { get; set; } = null!;
-        public string NextStep { get; set; } = null!;
-        public bool RequiresValidation { get; set; } = false;
+    public int Id { get; set; }
+    public int WorkflowId { get; set; }
+    public Workflow Workflow { get; set; } = null!;
 
-        public Workflow Workflow { get; set; } = null!;
-    }
+    public string StepName { get; set; } = null!;
+    public string AssignedTo { get; set; } = null!; // role or user id
+    public string ActionType { get; set; } = null!; // "input", "approve_reject", etc.
+    public string NextStep { get; set; } = null!; // next step name or "Completed"
+    public bool RequiresValidation { get; set; } = false;
 }

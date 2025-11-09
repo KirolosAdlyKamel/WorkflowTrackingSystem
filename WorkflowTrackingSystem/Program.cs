@@ -4,24 +4,33 @@ using Workflow.Application.Services;
 using Workflow.Infrastructure.Persistence;
 using Workflow.Infrastructure.Repositories;
 using Workflow.Infrastructure.Services;
-using Workflow.Presentation.Middlewares;
+using Workflow.Presentation.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Connection string
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Add services
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 
-// Register DbContext
-builder.Services.AddDbContext<AppDbContext>(opts => opts.UseSqlServer(connectionString));
-
-// Register Services
-builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
-builder.Services.AddScoped<IValidationService, ValidationService>();
-builder.Services.AddScoped<WorkflowService>();
-
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// DbContext
+var conn = builder.Configuration.GetConnectionString("DefaultConnection")
+           ?? "Server=(localdb)\\MSSQLLocalDB;Database=WorkflowDb;Trusted_Connection=True;";
+builder.Services.AddDbContext<AppDbContext>(opts => opts.UseSqlServer(conn));
+
+// Repositories & services
+builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
+builder.Services.AddScoped<IProcessRepository, ProcessRepository>();
+builder.Services.AddScoped<IValidationService, ExternalValidationSimulator>();
+
+builder.Services.AddScoped<WorkflowService>();
+builder.Services.AddScoped<ProcessService>();
 
 var app = builder.Build();
 
@@ -31,9 +40,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseGlobalErrorHandler();
+app.UseGlobalErrorHandler(); // global error handler
 app.UseHttpsRedirection();
+app.UseJsonMiddleware(); // custom JSON parser middleware if needed
 app.UseAuthorization();
-app.UseJsonMiddleware();
 app.MapControllers();
 app.Run();
